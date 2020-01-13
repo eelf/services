@@ -1,0 +1,17 @@
+{
+    "name": "eelf/services",
+    "require": {
+        "eelf/proto_webjson": "dev-master",
+        "eelf/protobuf": "dev-master"
+    },
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "git@github.com:eelf/proto_webjson.git"
+        },
+        {
+            "type": "vcs",
+            "url": "git@github.com:eelf/protobuf.git"
+        }
+    ]
+}

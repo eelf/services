@@ -1,0 +1,26 @@
+syntax = "proto2";
+
+package eelf.svc;
+
+import "google/protobuf/empty.proto";
+
+service Services {
+    rpc List (google.protobuf.Empty) returns (ServicesList) {}
+    rpc Service (ServiceName) returns (ServiceDescriptor) {}
+}
+
+message ServicesList {
+    repeated string service = 1;
+}
+
+message ServiceName {
+    required string name = 1;
+}
+
+message ServiceDescriptor {
+    message ServiceMethod {
+        required string name = 1;
+        repeated string args = 2;
+    }
+    repeated ServiceMethod meth = 1;
+}
