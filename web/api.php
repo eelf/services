@@ -1,30 +1,22 @@
 <?php
 
-$err = [];
-set_error_handler(function (...$a) use (&$err) {
-    $err[] = $a;
-});
-
 $root_path = realpath(__DIR__ . '/..');
 $base_path = $root_path . '/server';
 
 require_once $base_path . '/vendor/autoload.php';
-\Eelf\Protobuf\Util::psr4('google\\', $root_path . '/proto/google');
-\Eelf\Protobuf\Util::psr4('eelf\\', $root_path . '/proto/eelf');
-
-\Eelf\Protobuf\Util::ensure_extensions(['json']);
+\Eelf\Protobuf\Util::psr4('eelf\\', $base_path . '/proto/eelf');
 
 $body = file_get_contents('php://input');
 
 class Services implements \eelf\svc\Services {
-    public function List(\google\protobuf\Empty_ $request): \eelf\svc\ServicesList
+    public function List(\eelf\svc\ListRequest $request) : \eelf\svc\ListResponse
     {
-        $response = new \eelf\svc\ServicesList();
+        $response = new \eelf\svc\ListResponse();
         $response->setService(['udb', 'redd']);
         return $response;
     }
 
-    public function Service(\eelf\svc\ServiceName $request): \eelf\svc\ServiceDescriptor
+    public function Service(\eelf\svc\ServiceRequest $request) : \eelf\svc\ServiceResponse
     {
         $data = ['file' => [
             ['message_type' => [
@@ -36,10 +28,10 @@ class Services implements \eelf\svc\Services {
                 ]],
             ]]
         ]];
-        $response = new \eelf\svc\ServiceDescriptor;
+        $response = new \eelf\svc\ServiceResponse();
         foreach ($data['file'] as $file) {
             foreach ($file['message_type'] as $m) {
-                $meth = new \eelf\svc\ServiceDescriptor\ServiceMethod();
+                $meth = new \eelf\svc\ServiceResponse\ServiceMethod();
                 $meth->setName($m['name']);
                 $meth->setArgs(array_map(function ($e) {
                     return $e['name'];
@@ -51,10 +43,15 @@ class Services implements \eelf\svc\Services {
     }
 }
 
-header('Content-Type: application/json');
-$resp = (new \Eelf\WebJson\Router)($body, new Services);
+$method = $_SERVER['HTTP_X_METHOD'];
+try {
+    $resp = (new \Eelf\WebJson\Router)($method, $body, new Services);
+} catch (\Throwable $t) {
+    trigger_error($t);
+}
 if ($err) {
-    echo "FAIL " . var_export($err, 1) . " $resp";
+    var_dump($err);
 } else {
+    header('X-Status: Ok');
     echo $resp;
 }

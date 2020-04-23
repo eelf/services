@@ -48,6 +48,6 @@ export default class {
             // console.log(res);
             throw ['unknown url', url, JSON.stringify(res)];
         }
-        return {page: res.handler, args: Object.values(res.params || {})}
+        return {page: res.handler, args: res.params || {}}
     }
 }

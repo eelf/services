@@ -46,25 +46,18 @@ if (!in_array($mode = $argv[1] ?? null, ['production', 'development', 'clean']))
 chdir(__DIR__);
 
 if ($mode == 'clean') {
-    foreach (['.npmrc', 'webpack.config.js', '../web/main.js', 'yarn.lock', 'package.json'] as $file) {
-        if (file_exists($file)) unlink($file);
-    }
-    function scandir_recursive($dir, $pref) {
-        $dh = opendir($dir);
-        while ($e = readdir($dh)) {
-            if ($e == '.' || $e == '..') continue;
-            $path = "$dir/$e";
-            if (!is_link($path) && is_dir($path)) {
-                yield from scandir_recursive($path, $pref);
-                yield substr($path, strlen($pref));
-            } else yield substr($path, strlen($pref));
+    foreach (['.npmrc', 'webpack.config.js', '../web/main.js', 'yarn.lock', 'package.json', 'node_modules'] as $file) {
+        if (is_dir($file)) {
+            foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator(
+                $file, FilesystemIterator::SKIP_DOTS | FilesystemIterator::CURRENT_AS_PATHNAME), RecursiveIteratorIterator::CHILD_FIRST) as $path) {
+                if (is_dir($path) && !is_link($path)) rmdir($path);
+                else unlink($path);
+            }
+            rmdir($file);
+        } else if (file_exists($file)) {
+            unlink($file);
         }
     }
-    foreach (scandir_recursive('node_modules', '') as $path) {
-        if (is_dir($path) && !is_link($path)) rmdir($path);
-        else unlink($path);
-    }
-    if (is_dir('node_modules')) rmdir('node_modules');
     exit(0);
 }
 
@@ -82,6 +75,7 @@ file_put_contents('.npmrc', "prefix = $global_nm_prefix");
 file_put_contents('package.json', "{\"private\":true}");
 
 $packages = [
+    //compiler
     'webpack-cli',
     'webpack',
     '@babel/core',
@@ -90,11 +84,14 @@ $packages = [
     '@babel/preset-env',
     '@babel/plugin-proposal-class-properties',
     '@babel/plugin-proposal-decorators',
+
+    //dependencies
     'react',
     'react-dom',
     'mobx',
     'mobx-react',
     'https://github.com/ninedays-io/fast-route',
+    'google-protobuf',
 ];
 
 run($yarn, array_merge(['add', '--modules-folder', $global_nm_dir, '--dev'], $packages));

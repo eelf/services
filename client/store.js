@@ -1,8 +1,11 @@
 import {observable} from "mobx";
 import Api from "./lib/api";
-import proto from "../proto/proto";
 import Router from "./lib/router";
+
 import routes from "./routes";
+
+import * as proto from "./proto/s_pb";
+import * as svc from "./proto/s_grpc_pb";
 
 export default class {
     @observable view;
@@ -14,29 +17,23 @@ export default class {
     s;
     router;
     constructor() {
-        const api = new Api('/api.php', proto);
-        this.s = new proto.services['eelf.svc.Services'](api);
+        const api = new Api('/api.php');
+        this.s = new svc.Services(api);
         this.router = new Router(routes, this);
         this.router.popstate({state: this.router.urlToPage(location.pathname)});
     }
 
     getServices() {
-        return this.s.List(new proto.messages['google.protobuf.Empty']())
+        return this.s.List(new proto.ListRequest(), proto.ListResponse)
             .then(sl => {
-                /** @type sl ServicesList */
-                this.services = sl.getService();
-            })
-            .catch(e => {
+                this.services = sl.getServiceList();
             });
     }
 
     chooseService(service) {
-        return this.s.Service((new proto.messages['eelf.svc.ServiceName']).setName(service))
+        return this.s.Service(new proto.ServiceRequest({name: service}), proto.ServiceResponse)
             .then(sd => {
-                /** @type ServiceDescriptor sd */
-                this.methods = sd.getMeth().map(m => [m.getName(), m.getArgs()]);
-            })
-            .catch(e => {
+                this.methods = sd.getMethList().map(m => [m.getName(), m.getArgsList()]);
             });
     }
 };
